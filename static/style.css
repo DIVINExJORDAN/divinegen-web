@@ -1,0 +1,58 @@
+/* Overall page background */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #000000; /* Black background */
+    color: #ffffff; /* Light text color for contrast */
+}
+
+/* Navbar styling */
+.navbar {
+    padding: 10px;
+    background-color: #343a40; /* Dark navbar */
+}
+
+.navbar-brand {
+    font-size: 1.5em;
+    color: #ffffff !important;
+}
+
+.navbar-nav {
+    margin-left: auto;
+}
+
+#auth-btn {
+    margin-left: 20px;
+}
+
+/* Dropdown styling */
+.dropdown-toggle::after {
+    display: none;
+}
+
+.dropdown-menu {
+    background-color: #222222;
+    border: 1px solid #444444;
+}
+
+.dropdown-item {
+    color: #b0b0b0;
+}
+
+.dropdown-item:hover {
+    background-color: #9b59b6; /* Purple background on hover */
+    color: #ffffff;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+/* Other content and page layout */
+.container-fluid {
+    padding: 20px;
+}
+
+footer {
+    text-align: center;
+    color: #b0b0b0;
+}

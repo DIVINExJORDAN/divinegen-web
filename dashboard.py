@@ -119,19 +119,7 @@ def giveaways():
         return jsonify({'success': True, 'message': 'Giveaway added successfully!'})
     is_empty = len(giveaways) == 0
     return render_template('giveaways.html', giveaways=giveaways, is_empty=is_empty)
-
-stats_data = {
-    "uptime": "N/A",
-    "latency": "N/A",
-    "servers": "N/A",
-    "users": "N/A",
-    "cpu_usage": "N/A",
-    "ram_usage": "N/A",
-    "api_requests": "N/A",
-    "errors": "N/A",
-    "commands_executed": "N/A"
-}
-
+    
 @app.route('/api/update-stats', methods=['POST'])
 def update_stats():
     global stats_data

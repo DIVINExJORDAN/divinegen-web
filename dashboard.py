@@ -28,7 +28,7 @@ client = WebApplicationClient(DISCORD_CLIENT_ID)
 
 @app.before_request
 def require_login():
-    allowed_routes = ['login', 'signup', 'discord_callback', 'static', 'service_summary']
+    allowed_routes = ['login', 'signup', 'discord_callback', 'static', 'service_summary', 'update_stats']
     if 'user' not in session and request.endpoint not in allowed_routes:
         return redirect(url_for('login'))
     
@@ -120,20 +120,47 @@ def giveaways():
     is_empty = len(giveaways) == 0
     return render_template('giveaways.html', giveaways=giveaways, is_empty=is_empty)
     
+def update_bot_stats(stats):
+    # Simulating an update process (e.g., saving to a database or performing some logic)
+    print("Updating stats:", stats)
+    # For this example, we'll assume stats are successfully processed
+    return True
+
 @app.route('/api/update-stats', methods=['POST'])
 def update_stats():
-    global stats_data
-    stats_data = request.json  # Update stats with received data
-    socketio.emit('stats_update', stats_data)  # Broadcast update
-    return jsonify({"status": "success"}), 200
+    try:
+        # Attempt to parse the incoming JSON data
+        data = request.get_json()
 
-@app.route('/stats/json', methods=['GET'])
-def get_stats_json():
-    return jsonify(stats_data)
+        if not data:
+            # If no JSON data is sent, return a 400 Bad Request
+            return jsonify({"error": "No JSON data provided"}), 400
 
-@app.route('/stats', methods=['GET'])
-def stats_page():
-    return render_template('stats.html')
+        # Ensure the necessary fields are present in the incoming stats
+        required_fields = [
+            "uptime", "latency", "servers", "users", "cpu_usage",
+            "ram_usage", "api_requests", "errors", "commands_executed"
+        ]
+        
+        # Check if all required fields are in the request
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+        
+        # Update the bot stats (this is where your logic to update stats would go)
+        success = update_bot_stats(data)
+        
+        if success:
+            # If stats are successfully processed, return a success response
+            return jsonify({"message": "Stats updated successfully!"}), 200
+        else:
+            # If something goes wrong with processing the stats
+            return jsonify({"error": "Failed to update stats"}), 500
+
+    except Exception as e:
+        # Catch any unexpected errors
+        print(f"Error: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
 
 @app.route('/login', methods=['GET', 'POST'])
 def login(): 

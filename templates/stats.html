@@ -51,6 +51,24 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/script.js"></script>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <script>
+        const socket = io();  // Connect to Socket.IO server
+
+        socket.on('stats_update', (stats) => {
+            document.getElementById('uptime').innerText = stats.uptime || 'N/A';
+            document.getElementById('latency').innerText = stats.latency || 'N/A';
+            document.getElementById('total-servers').innerText = stats.servers || 'N/A';
+            document.getElementById('total-members').innerText = stats.users || 'N/A';
+            document.getElementById('cpu-usage-percent').innerText = stats.cpu_usage + '%' || 'N/A';
+            document.getElementById('ram-usage-percent').innerText = stats.ram_usage + '%' || 'N/A';
+            document.getElementById('api-requests').innerText = stats.api_requests || 'N/A';
+            document.getElementById('errors').innerText = stats.errors || 'N/A';
+            document.getElementById('commands-executed').innerText = stats.commands_executed || 'N/A';
+        
+            updateUsageCharts(stats.cpu_usage, stats.ram_usage);  // Update charts
+        });
+    </script>
 
 <div class="container mx-auto p-6">
     <h1 class="text-4xl font-bold mb-6 text-center">

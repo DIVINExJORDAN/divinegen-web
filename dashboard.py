@@ -120,12 +120,27 @@ def giveaways():
     is_empty = len(giveaways) == 0
     return render_template('giveaways.html', giveaways=giveaways, is_empty=is_empty)
     
+# Dummy function to simulate fetching stats (can replace with actual logic)
+def fetch_bot_stats():
+    return {
+        "uptime": "12 hours",
+        "latency": 42,
+        "servers": 10,
+        "users": 1500,
+        "cpu_usage": 30,
+        "ram_usage": 40,
+        "api_requests": 100,
+        "errors": 2,
+        "commands_executed": 50,
+    }
+
+# Dummy function to simulate updating stats
 def update_bot_stats(stats):
     # Simulating an update process (e.g., saving to a database or performing some logic)
     print("Updating stats:", stats)
-    # For this example, we'll assume stats are successfully processed
-    return True
+    return True  # Return True to simulate success
 
+# Endpoint to handle updating stats (POST request example)
 @app.route('/api/update-stats', methods=['POST'])
 def update_stats():
     try:
@@ -151,24 +166,29 @@ def update_stats():
         success = update_bot_stats(data)
         
         if success:
-            # If stats are successfully processed, return a success response
             return jsonify({"message": "Stats updated successfully!"}), 200
         else:
-            # If something goes wrong with processing the stats
             return jsonify({"error": "Failed to update stats"}), 500
 
     except Exception as e:
-        # Catch any unexpected errors
         print(f"Error: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
 
+# Route to fetch stats in JSON format
 @app.route('/stats/json', methods=['GET'])
 def get_stats_json():
-    return jsonify(stats_data)
+    stats_data = fetch_bot_stats()  # Get the stats data
+    return jsonify(stats_data)  # Return the stats as JSON
 
+# Route to render the stats page
 @app.route('/stats', methods=['GET'])
 def stats_page():
-    return render_template('stats.html')
+    try:
+        stats_data = fetch_bot_stats()  # Fetch the stats data
+        return render_template('stats.html', stats=stats_data)  # Pass data to the template
+    except Exception as e:
+        print(f"Error rendering stats page: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
     
 @app.route('/login', methods=['GET', 'POST'])
 def login(): 

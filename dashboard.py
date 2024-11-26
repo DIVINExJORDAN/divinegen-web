@@ -255,44 +255,12 @@ def manage_service(service_name):
 def dashboard():
     return render_template('dashboard.html')
 
-@app.route('/api/stock', methods=['GET'])
-def api_get_stock():
-    stock = load_file(STOCK_FILE, {})
-    return jsonify(stock)
-
-@app.route('/api/stock', methods=['POST'])
-def api_add_stock():
-    data = request.json
-    category = data.get('category')
-    service = data.get('service')
-    accounts_list = data.get('accounts', [])
-
-    stock = load_file(STOCK_FILE, {})
-
-    if category not in stock:
-        stock[category] = {}
-    if service not in stock[category]:
-        stock[category][service] = []
-    stock[category][service].extend(accounts_list)
-
-    save_file(STOCK_FILE, stock)
-    return jsonify({'success': True, 'message': f'Added accounts to {service} in {category}.'})
-
-@app.route('/api/upload', methods=['POST'])
-def api_upload_accounts():
-    data = request.json
-    service = data.get('service')
-    accounts_list = data.get('accounts', [])
-
-    stock = load_file(STOCK_FILE, {})
-
-    if service not in stock:
-        stock[service] = []
-    stock[service].extend(accounts_list)
-
-    save_file(STOCK_FILE, stock)
-    return jsonify({'success': True, 'message': f'Accounts uploaded for service {service}.'})
-
+@app.route('/services/summary', methods=['GET'])
+def service_summary():
+    accounts = load_accounts()  # Load accounts from `accounts.json`
+    summary = {service: len(accounts_list) for service, accounts_list in accounts.items()}
+    return jsonify(summary)
+    
 @app.route('/callback')
 def discord_callback():
     # Step 1: Get the authorization code

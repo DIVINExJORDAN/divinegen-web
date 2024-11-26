@@ -162,10 +162,14 @@ def update_stats():
         print(f"Error: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
 
+@app.route('/stats/json', methods=['GET'])
+def get_stats_json():
+    return jsonify(stats_data)
+
 @app.route('/stats', methods=['GET'])
 def stats_page():
     return render_template('stats.html')
-
+    
 @app.route('/login', methods=['GET', 'POST'])
 def login(): 
     if request.method == 'POST':

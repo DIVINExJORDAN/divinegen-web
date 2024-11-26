@@ -24,7 +24,7 @@ client = WebApplicationClient(DISCORD_CLIENT_ID)
 
 @app.before_request
 def require_login():
-    allowed_routes = ['login', 'signup', 'discord_callback', 'static']  # Routes that don't require login
+    allowed_routes = ['login', 'signup', 'discord_callback', 'static', 'service_summary']
     if 'user' not in session and request.endpoint not in allowed_routes:
         return redirect(url_for('login'))
     

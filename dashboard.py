@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
+from flask_socketio import SocketIO, emit
 import json
 import os
 import requests
@@ -6,6 +7,9 @@ from oauthlib.oauth2 import WebApplicationClient
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
+socketio = SocketIO(app)
+
+stats_data = {}
 
 app.secret_key = os.urandom(24)
 
@@ -116,26 +120,20 @@ def giveaways():
     is_empty = len(giveaways) == 0
     return render_template('giveaways.html', giveaways=giveaways, is_empty=is_empty)
 
+@app.route('/api/update-stats', methods=['POST'])
+def update_stats():
+    global stats_data
+    stats_data = request.json  # Update stats with received data
+    socketio.emit('stats_update', stats_data)  # Broadcast update
+    return jsonify({"status": "success"}), 200
+
 @app.route('/stats/json', methods=['GET'])
 def get_stats_json():
-    if os.path.exists(stats_file):
-        with open(stats_file, 'r') as f:
-            stats = json.load(f)
-        return jsonify(stats)
-    return jsonify({"error": "Stats not available"}), 500
+    return jsonify(stats_data)
 
 @app.route('/stats', methods=['GET'])
 def stats_page():
-    # Ensure logs.json exists and read its content
-    if os.path.exists(stats_file):
-        with open(stats_file, 'r') as f:
-            stats = json.load(f)
-
-        # Pass stats to the template for rendering
-        return render_template('stats.html', stats=stats)
-    
-    return "Error: Stats file not found", 500
-
+    return render_template('stats.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login(): 

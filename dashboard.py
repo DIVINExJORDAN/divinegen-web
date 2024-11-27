@@ -5,6 +5,7 @@ import os
 import requests
 from oauthlib.oauth2 import WebApplicationClient
 from werkzeug.security import generate_password_hash, check_password_hash
+import logging
 
 app = Flask(__name__)
 socketio = SocketIO(app)

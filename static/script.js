@@ -10,6 +10,8 @@ function updateUsageCharts(cpuUsage, ramUsage) {
     ramUsageChart.update();
 }
 
+AOS.init();
+
 // Toggle login/logout button
 let isLoggedIn = false; // Change this based on user authentication status
 

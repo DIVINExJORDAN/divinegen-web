@@ -11,16 +11,12 @@ from marshmallow import Schema, fields, ValidationError
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-logging.basicConfig(level=logging.INFO)
-
-stats_data = {}
-
 app.secret_key = os.urandom(24)
 
 # File paths
 STOCK_FILE = 'accounts.json'
 GIVEAWAYS_FILE = 'giveaways.json'
-stats_file = 'logs.json'
+stats_file = 'stats.json'
 USER_FILE = 'users.json'
 
 # OAuth2 client setup for Discord

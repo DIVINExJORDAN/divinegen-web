@@ -32,6 +32,9 @@
                 <li><a class="dropdown-item" href="/services">Services</a></li>
             </ul>
         </div>
+        <div class="container-fluid mt-4 fade-in">
+        {% block content %}{% endblock %}
+        </div>
         
         <!-- Login/Logout Button on the right -->
         {% if session.get('user') %}

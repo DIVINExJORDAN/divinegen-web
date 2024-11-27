@@ -124,79 +124,25 @@ def giveaways():
     is_empty = len(giveaways) == 0
     return render_template('giveaways.html', giveaways=giveaways, is_empty=is_empty)
     
-# Schema for validating stats
-class BotStatsSchema(Schema):
-    uptime = fields.String(required=True)
-    latency = fields.Integer(required=True)
-    servers = fields.Integer(required=True)
-    users = fields.Integer(required=True)
-    cpu_usage = fields.Integer(required=True)
-    ram_usage = fields.Integer(required=True)
-    api_requests = fields.Integer(required=True)
-    errors = fields.Integer(required=True)
-    commands_executed = fields.Integer(required=True)
-
-stats_schema = BotStatsSchema()
-
-# Endpoint to handle updating stats
-@app.route('/api/update-stats', methods=['POST'])
-def update_stats():
-    try:
-        # Parse and validate the incoming JSON data
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No JSON data provided"}), 400
-        
-        validated_data = stats_schema.load(data)
-
-        # TODO: Store validated_data in a database or update logic
-        logging.info(f"Stats updated: {validated_data}")
-
-        return jsonify({"message": "Stats updated successfully!"}), 200
-
-    except ValidationError as ve:
-        logging.error(f"Validation error: {ve.messages}")
-        return jsonify({"error": ve.messages}), 400
-
-    except Exception as e:
-        logging.error(f"Internal server error: {e}")
-        return jsonify({"error": "Internal Server Error"}), 500
-
-# Route to fetch stats in JSON format
 @app.route('/stats/json', methods=['GET'])
 def get_stats_json():
-    try:
-        # TODO: Fetch stats from a database or cache
-        stats_data = fetch_bot_stats()  # Replace with database query
-        return jsonify(stats_data)
-    except Exception as e:
-        logging.error(f"Error fetching stats: {e}")
-        return jsonify({"error": "Internal Server Error"}), 500
+    if os.path.exists(stats_file):
+        with open(stats_file, 'r') as f:
+            stats = json.load(f)
+        return jsonify(stats)
+    return jsonify({"error": "Stats not available"}), 500
 
-# Route to render the stats page
 @app.route('/stats', methods=['GET'])
 def stats_page():
-    try:
-        # TODO: Fetch stats from a database or cache
-        stats_data = fetch_bot_stats()  # Replace with database query
-        return render_template('stats.html', stats=stats_data)
-    except Exception as e:
-        logging.error(f"Error rendering stats page: {e}")
-        return jsonify({"error": "Internal Server Error"}), 500
+    # Ensure logs.json exists and read its content
+    if os.path.exists(stats_file):
+        with open(stats_file, 'r') as f:
+            stats = json.load(f)
 
-# Dummy function to simulate fetching stats
-def fetch_bot_stats():
-    return {
-        "uptime": "12 hours",
-        "latency": 42,
-        "servers": 10,
-        "users": 1500,
-        "cpu_usage": 30,
-        "ram_usage": 40,
-        "api_requests": 100,
-        "errors": 2,
-        "commands_executed": 50,
-    }
+        # Pass stats to the template for rendering
+        return render_template('stats.html', stats=stats)
+    
+    return "Error: Stats file not found", 500
     
 @app.route('/login', methods=['GET', 'POST'])
 def login(): 

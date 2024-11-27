@@ -9,6 +9,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 socketio = SocketIO(app)
 
+logging.basicConfig(level=logging.INFO)
+
 stats_data = {}
 
 app.secret_key = os.urandom(24)
@@ -120,7 +122,67 @@ def giveaways():
     is_empty = len(giveaways) == 0
     return render_template('giveaways.html', giveaways=giveaways, is_empty=is_empty)
     
-# Dummy function to simulate fetching stats (can replace with actual logic)
+# Schema for validating stats
+class BotStatsSchema(Schema):
+    uptime = fields.String(required=True)
+    latency = fields.Integer(required=True)
+    servers = fields.Integer(required=True)
+    users = fields.Integer(required=True)
+    cpu_usage = fields.Integer(required=True)
+    ram_usage = fields.Integer(required=True)
+    api_requests = fields.Integer(required=True)
+    errors = fields.Integer(required=True)
+    commands_executed = fields.Integer(required=True)
+
+stats_schema = BotStatsSchema()
+
+# Endpoint to handle updating stats
+@app.route('/api/update-stats', methods=['POST'])
+def update_stats():
+    try:
+        # Parse and validate the incoming JSON data
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+        
+        validated_data = stats_schema.load(data)
+
+        # TODO: Store validated_data in a database or update logic
+        logging.info(f"Stats updated: {validated_data}")
+
+        return jsonify({"message": "Stats updated successfully!"}), 200
+
+    except ValidationError as ve:
+        logging.error(f"Validation error: {ve.messages}")
+        return jsonify({"error": ve.messages}), 400
+
+    except Exception as e:
+        logging.error(f"Internal server error: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+# Route to fetch stats in JSON format
+@app.route('/stats/json', methods=['GET'])
+def get_stats_json():
+    try:
+        # TODO: Fetch stats from a database or cache
+        stats_data = fetch_bot_stats()  # Replace with database query
+        return jsonify(stats_data)
+    except Exception as e:
+        logging.error(f"Error fetching stats: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+# Route to render the stats page
+@app.route('/stats', methods=['GET'])
+def stats_page():
+    try:
+        # TODO: Fetch stats from a database or cache
+        stats_data = fetch_bot_stats()  # Replace with database query
+        return render_template('stats.html', stats=stats_data)
+    except Exception as e:
+        logging.error(f"Error rendering stats page: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+# Dummy function to simulate fetching stats
 def fetch_bot_stats():
     return {
         "uptime": "12 hours",
@@ -133,62 +195,6 @@ def fetch_bot_stats():
         "errors": 2,
         "commands_executed": 50,
     }
-
-# Dummy function to simulate updating stats
-def update_bot_stats(stats):
-    # Simulating an update process (e.g., saving to a database or performing some logic)
-    print("Updating stats:", stats)
-    return True  # Return True to simulate success
-
-# Endpoint to handle updating stats (POST request example)
-@app.route('/api/update-stats', methods=['POST'])
-def update_stats():
-    try:
-        # Attempt to parse the incoming JSON data
-        data = request.get_json()
-
-        if not data:
-            # If no JSON data is sent, return a 400 Bad Request
-            return jsonify({"error": "No JSON data provided"}), 400
-
-        # Ensure the necessary fields are present in the incoming stats
-        required_fields = [
-            "uptime", "latency", "servers", "users", "cpu_usage",
-            "ram_usage", "api_requests", "errors", "commands_executed"
-        ]
-        
-        # Check if all required fields are in the request
-        for field in required_fields:
-            if field not in data:
-                return jsonify({"error": f"Missing required field: {field}"}), 400
-        
-        # Update the bot stats (this is where your logic to update stats would go)
-        success = update_bot_stats(data)
-        
-        if success:
-            return jsonify({"message": "Stats updated successfully!"}), 200
-        else:
-            return jsonify({"error": "Failed to update stats"}), 500
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"error": "Internal Server Error"}), 500
-
-# Route to fetch stats in JSON format
-@app.route('/stats/json', methods=['GET'])
-def get_stats_json():
-    stats_data = fetch_bot_stats()  # Get the stats data
-    return jsonify(stats_data)  # Return the stats as JSON
-
-# Route to render the stats page
-@app.route('/stats', methods=['GET'])
-def stats_page():
-    try:
-        stats_data = fetch_bot_stats()  # Fetch the stats data
-        return render_template('stats.html', stats=stats_data)  # Pass data to the template
-    except Exception as e:
-        print(f"Error rendering stats page: {e}")
-        return jsonify({"error": "Internal Server Error"}), 500
     
 @app.route('/login', methods=['GET', 'POST'])
 def login(): 

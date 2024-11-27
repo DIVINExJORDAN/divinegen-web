@@ -1,17 +1,3 @@
-function updateUsageCharts(cpuUsage, ramUsage) {
-    // Add new data points to CPU usage chart
-    cpuUsageChart.data.datasets[0].data.push(cpuUsage);
-    cpuUsageChart.data.labels.push(new Date().toLocaleTimeString());
-    cpuUsageChart.update();
-
-    // Add new data points to RAM usage chart
-    ramUsageChart.data.datasets[0].data.push(ramUsage);
-    ramUsageChart.data.labels.push(new Date().toLocaleTimeString());
-    ramUsageChart.update();
-}
-
-AOS.init();
-
 // Toggle login/logout button
 let isLoggedIn = false; // Change this based on user authentication status
 
@@ -27,4 +13,3 @@ authBtn.addEventListener('click', function () {
         // Handle logout process (e.g., clear session, redirect, etc.)
     }
 });
-

@@ -1,1 +1,9 @@
-
+{
+    "users": [
+        {
+            "email": "arshnoorsingh282@gmail.com",
+            "username": "Jordan",
+            "password": "scrypt:32768:8:1$FVD8G1Z9GBS20gUG$91ceeaccd310c2b88159771b3c91a6475ca2f2682a8491ee981334658c4c08a6154436649dc352f4686b302a1f04dd13df2e614be0db2ca8ccef462c2018f0d3"
+        }
+    ]
+}

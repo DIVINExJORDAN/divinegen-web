@@ -108,12 +108,11 @@ def manage_stock():
 @app.route('/api/get_account', methods=['POST'])
 def get_account():
     """
-    API endpoint for fetching an account for a given service.
+    API endpoint for generating an account for a given service.
     """
     data = request.json
     service = data.get('service')
-    
-    # Validate the input
+
     if not service:
         return jsonify({'success': False, 'message': 'Service not specified'}), 400
 
@@ -121,19 +120,43 @@ def get_account():
     accounts = load_accounts()
     service_lower = service.lower()
 
-    # Check if accounts exist for the service
+    # Check stock for the requested service
     if service_lower in accounts and accounts[service_lower]:
-        # Fetch and remove the first account
-        account = accounts[service_lower].pop(0)
-        save_accounts(accounts)  # Save updated stock after removal
-        username, password = account.split(':')
+        # Remove and return the first account
+        account = accounts[service_lower].pop(0)  # Remove the first account
+        save_accounts(accounts)  # Save updated stock
+
+        username, password = account.split(':', 1)
         return jsonify({
             'success': True,
             'username': username,
-            'password': password
+            'password': password,
+            'remaining_stock': len(accounts[service_lower])  # Show updated stock count
         })
     else:
-        return jsonify({'success': False, 'message': f'No accounts available for the service: {service}'}), 404
+        return jsonify({'success': False, 'message': f'No accounts available for {service}'}), 404
+
+@app.route('/manage_service/<service_name>', methods=['GET', 'POST'])
+def manage_service(service_name):
+    """
+    Manage accounts for a specific service.
+    """
+    accounts = load_accounts()
+    service_name = service_name.lower()
+
+    if service_name not in accounts:
+        flash(f"Service '{service_name}' does not exist.", "danger")
+        return redirect(url_for('services'))
+
+    if request.method == 'POST':
+        # Add or replace accounts for the service
+        new_accounts = request.form['accounts']
+        unique_accounts = list(set([account.strip() for account in new_accounts.splitlines() if account.strip()]))
+        accounts[service_name] = unique_accounts  # Update the stock for the service
+        save_accounts(accounts)
+        flash(f"Accounts for service '{service_name}' updated successfully!", "success")
+
+    return render_template('manage_service.html', service_name=service_name, accounts=accounts[service_name])
 
 @app.route('/giveaways', methods=['GET', 'POST'])
 def giveaways():

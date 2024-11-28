@@ -34,15 +34,21 @@ def require_login():
     
 def load_accounts():
     try:
-        with open('accounts.json', 'r') as f:
+        with open(ACCOUNTS_FILE, 'r') as f:
             return json.load(f)
     except FileNotFoundError:
         return {}
+    except json.JSONDecodeError:
+        return {}
+
 
 def save_accounts(accounts):
-    with open('accounts.json', 'w') as f:
-        json.dump(accounts, f, indent=4)
-
+    try:
+        with open(ACCOUNTS_FILE, 'w') as f:
+            json.dump(accounts, f, indent=4)
+    except IOError as e:
+        print(f"Error saving accounts: {e}")
+        
 # Utility functions
 def load_file(file_path, default):
     if os.path.exists(file_path):
@@ -89,22 +95,26 @@ def home():
 @app.route('/stock', methods=['GET', 'POST'])
 def manage_stock():
     stock = load_file(STOCK_FILE, {})
-    accounts = load_accounts()  # Load accounts from accounts.json
+    accounts = load_accounts()
+
     if request.method == 'POST':
         data = request.json
         category = data.get('category')
         service = data.get('service')
         accounts_list = data.get('accounts', [])
-        
+
+        if not category or not service or not accounts_list:
+            return jsonify({'success': False, 'message': 'Missing required fields: category, service, or accounts'}), 400
+
         if category not in stock:
             stock[category] = {}
         if service not in stock[category]:
             stock[category][service] = []
+
         stock[category][service].extend(accounts_list)
         save_file(STOCK_FILE, stock)
         save_accounts(accounts)  # Ensure accounts are saved after any changes
         return jsonify({'success': True, 'message': f'Added accounts to {service} in {category}.'})
-    return render_template('stock.html', stock=stock, accounts=accounts)
     
 @app.route('/api/get_account', methods=['POST'])
 def get_account():
@@ -123,24 +133,23 @@ def get_account():
 
     # Check stock for the requested service
     if service_lower in accounts and accounts[service_lower]:
-        # Remove and return the first account
-        account = accounts[service_lower].pop(0)  # Remove the first account
-        save_accounts(accounts)  # Save updated stock
+    account = accounts[service_lower].pop(0)  # Remove the first account
+    save_accounts(accounts)  # Save updated stock
 
-        username, password = account.split(':', 1)
-        
-        # Ensure account is removed from manage_service and stock
-        manage_service(service_lower, remove_account=account)
+    username, password = account.split(':', 1)
+    
+    # Ensure account is removed from manage_service and stock
+    manage_service(service_lower, remove_account=account)
 
-        return jsonify({
-            'success': True,
-            'username': username,
-            'password': password,
-            'remaining_stock': len(accounts[service_lower])  # Show updated stock count
-        })
-    else:
-        return jsonify({'success': False, 'message': f'No accounts available for {service}'}), 404
-
+    return jsonify({
+        'success': True,
+        'username': username,
+        'password': password,
+        'remaining_stock': len(accounts[service_lower])  # Show updated stock count
+    })
+else:
+    return jsonify({'success': False, 'message': f'No accounts available for {service}'}), 404
+    
 @app.route('/manage_service/<service_name>', methods=['GET', 'POST'])
 def manage_service(service_name, remove_account=None):
     accounts = load_accounts()

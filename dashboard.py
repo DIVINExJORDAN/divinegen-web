@@ -142,6 +142,7 @@ def manage_service(service_name):
     Manage accounts for a specific service.
     """
     accounts = load_accounts()
+    logging.debug(f"Loaded accounts: {accounts}")  # Debug log to check loaded accounts
     service_name = service_name.lower()
 
     if service_name not in accounts:

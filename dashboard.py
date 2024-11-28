@@ -43,7 +43,6 @@ def save_accounts(accounts):
     with open('accounts.json', 'w') as f:
         json.dump(accounts, f, indent=4)
 
-
 # Utility functions
 def load_file(file_path, default):
     if os.path.exists(file_path):
@@ -136,21 +135,24 @@ def get_account():
     else:
         return jsonify({'success': False, 'message': f'No accounts available for {service}'}), 404
 
-@app.route('/manage_service/<service_name>', methods=['GET', 'POST'])
+@app.route('/manage_services/<service_name>', methods=['GET', 'POST'])
 def manage_service(service_name):
     accounts = load_accounts()
+    service_name = service_name.lower()
+
     if service_name not in accounts:
         flash(f"Service '{service_name}' does not exist.", "danger")
         return redirect(url_for('services'))
 
     if request.method == 'POST':
-        # Edit accounts for the service
+        # Add or replace accounts for the service
         new_accounts = request.form['accounts']
-        accounts[service_name] = [account.strip() for account in new_accounts.splitlines() if account.strip()]
+        unique_accounts = list(set([account.strip() for account in new_accounts.splitlines() if account.strip()]))
+        accounts[service_name] = unique_accounts  # Update the stock for the service
         save_accounts(accounts)
         flash(f"Accounts for service '{service_name}' updated successfully!", "success")
 
-    return render_template('manage_service.html', service_name=service_name, accounts=accounts)
+    return render_template('manage_service.html', service_name=service_name, accounts=accounts.get(service_name, []))
 
 def giveaways():
     giveaways = load_file(GIVEAWAYS_FILE, [])

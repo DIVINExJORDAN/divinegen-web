@@ -95,15 +95,17 @@ def manage_stock():
         category = data.get('category')
         service = data.get('service')
         accounts_list = data.get('accounts', [])
+        
         if category not in stock:
             stock[category] = {}
         if service not in stock[category]:
             stock[category][service] = []
         stock[category][service].extend(accounts_list)
         save_file(STOCK_FILE, stock)
+        save_accounts(accounts)  # Ensure accounts are saved after any changes
         return jsonify({'success': True, 'message': f'Added accounts to {service} in {category}.'})
     return render_template('stock.html', stock=stock, accounts=accounts)
-
+    
 @app.route('/api/get_account', methods=['POST'])
 def get_account():
     """
@@ -126,6 +128,10 @@ def get_account():
         save_accounts(accounts)  # Save updated stock
 
         username, password = account.split(':', 1)
+        
+        # Ensure account is removed from manage_service and stock
+        manage_service(service_lower, remove_account=account)
+
         return jsonify({
             'success': True,
             'username': username,
@@ -135,25 +141,32 @@ def get_account():
     else:
         return jsonify({'success': False, 'message': f'No accounts available for {service}'}), 404
 
-@app.route('/manage_services/<service_name>', methods=['GET', 'POST'])
-def manage_service(service_name):
+@app.route('/manage_service/<service_name>', methods=['GET', 'POST'])
+def manage_service(service_name, remove_account=None):
     accounts = load_accounts()
-    service_name = service_name.lower()
 
     if service_name not in accounts:
         flash(f"Service '{service_name}' does not exist.", "danger")
         return redirect(url_for('services'))
 
     if request.method == 'POST':
-        # Add or replace accounts for the service
+        # Edit accounts for the service
         new_accounts = request.form['accounts']
-        unique_accounts = list(set([account.strip() for account in new_accounts.splitlines() if account.strip()]))
-        accounts[service_name] = unique_accounts  # Update the stock for the service
+        accounts[service_name] = [account.strip() for account in new_accounts.splitlines() if account.strip()]
         save_accounts(accounts)
         flash(f"Accounts for service '{service_name}' updated successfully!", "success")
 
-    return render_template('manage_service.html', service_name=service_name, accounts=accounts.get(service_name, []))
+    # If an account is passed for removal, remove it from the stock
+    if remove_account:
+        if remove_account in accounts[service_name]:
+            accounts[service_name].remove(remove_account)
+            save_accounts(accounts)
+            flash(f"Account removed from service '{service_name}'", "success")
+        else:
+            flash(f"Account not found in service '{service_name}'", "danger")
 
+    return render_template('manage_service.html', service_name=service_name, accounts=accounts)
+    
 def giveaways():
     giveaways = load_file(GIVEAWAYS_FILE, [])
     if request.method == 'POST':

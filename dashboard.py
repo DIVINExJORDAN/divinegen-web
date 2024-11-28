@@ -138,26 +138,19 @@ def get_account():
 
 @app.route('/manage_service/<service_name>', methods=['GET', 'POST'])
 def manage_service(service_name):
-    """
-    Manage accounts for a specific service.
-    """
     accounts = load_accounts()
-    logging.debug(f"Loaded accounts: {accounts}")  # Debug log to check loaded accounts
-    service_name = service_name.lower()
-
     if service_name not in accounts:
         flash(f"Service '{service_name}' does not exist.", "danger")
         return redirect(url_for('services'))
 
     if request.method == 'POST':
-        # Add or replace accounts for the service
+        # Edit accounts for the service
         new_accounts = request.form['accounts']
-        unique_accounts = list(set([account.strip() for account in new_accounts.splitlines() if account.strip()]))
-        accounts[service_name] = unique_accounts  # Update the stock for the service
+        accounts[service_name] = [account.strip() for account in new_accounts.splitlines() if account.strip()]
         save_accounts(accounts)
         flash(f"Accounts for service '{service_name}' updated successfully!", "success")
 
-    return render_template('manage_service.html', service_name=service_name, accounts=accounts[service_name])
+    return render_template('manage_service.html', service_name=service_name, accounts=accounts)
 
 def giveaways():
     giveaways = load_file(GIVEAWAYS_FILE, [])

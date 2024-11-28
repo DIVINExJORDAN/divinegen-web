@@ -158,7 +158,6 @@ def manage_service(service_name):
 
     return render_template('manage_service.html', service_name=service_name, accounts=accounts[service_name])
 
-@app.route('/giveaways', methods=['GET', 'POST'])
 def giveaways():
     giveaways = load_file(GIVEAWAYS_FILE, [])
     if request.method == 'POST':

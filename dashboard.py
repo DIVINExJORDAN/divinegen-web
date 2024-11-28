@@ -105,6 +105,36 @@ def manage_stock():
         return jsonify({'success': True, 'message': f'Added accounts to {service} in {category}.'})
     return render_template('stock.html', stock=stock, accounts=accounts)
 
+@app.route('/api/get_account', methods=['POST'])
+def get_account():
+    """
+    API endpoint for fetching an account for a given service.
+    """
+    data = request.json
+    service = data.get('service')
+    
+    # Validate the input
+    if not service:
+        return jsonify({'success': False, 'message': 'Service not specified'}), 400
+
+    # Load accounts
+    accounts = load_accounts()
+    service_lower = service.lower()
+
+    # Check if accounts exist for the service
+    if service_lower in accounts and accounts[service_lower]:
+        # Fetch and remove the first account
+        account = accounts[service_lower].pop(0)
+        save_accounts(accounts)  # Save updated stock after removal
+        username, password = account.split(':')
+        return jsonify({
+            'success': True,
+            'username': username,
+            'password': password
+        })
+    else:
+        return jsonify({'success': False, 'message': f'No accounts available for the service: {service}'}), 404
+
 @app.route('/giveaways', methods=['GET', 'POST'])
 def giveaways():
     giveaways = load_file(GIVEAWAYS_FILE, [])

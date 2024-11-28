@@ -121,19 +121,16 @@ def giveaways():
     return render_template('giveaways.html', giveaways=giveaways, is_empty=is_empty)
 
 @app.route('/fetch_account/<service_name>', methods=['GET'])
-@login_required
 def fetch_account(service_name):
-    accounts = load_accounts()
-    # Check if the service exists
-    if service_name in accounts and len(accounts[service_name]) > 0:
-        # Fetch one account from the service
-        account = accounts[service_name].pop(0)  # Remove the first account
-        save_accounts(accounts)  # Save the updated list back to accounts.json
-        
-        # Return the account in the 'user:pass' format
-        return jsonify({"account": account}), 200
-    else:
+    accounts = load_accounts()  # Load accounts from accounts.json
+    if service_name not in accounts or not accounts[service_name]:
         return jsonify({"error": "No accounts available for this service."}), 404
+
+    # Get the first account (user:pass) from the list
+    account = accounts[service_name].pop(0)  # Remove it from the list after fetching
+    save_accounts(accounts)  # Save the updated accounts back to the file
+
+    return jsonify({"account": account}), 200
     
 @app.route('/stats/json', methods=['GET'])
 def get_stats_json():

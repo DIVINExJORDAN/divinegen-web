@@ -28,27 +28,22 @@ client = WebApplicationClient(DISCORD_CLIENT_ID)
 
 @app.before_request
 def require_login():
-    allowed_routes = ['login', 'signup', 'discord_callback', 'static', 'service_summary', 'update_stats', 'get_account']
+    allowed_routes = ['login', 'signup', 'discord_callback', 'static', 'service_summary', 'update_stats']
     if 'user' not in session and request.endpoint not in allowed_routes:
         return redirect(url_for('login'))
     
 def load_accounts():
     try:
-        with open(ACCOUNTS_FILE, 'r') as f:
+        with open('accounts.json', 'r') as f:
             return json.load(f)
     except FileNotFoundError:
         return {}
-    except json.JSONDecodeError:
-        return {}
-
 
 def save_accounts(accounts):
-    try:
-        with open(ACCOUNTS_FILE, 'w') as f:
-            json.dump(accounts, f, indent=4)
-    except IOError as e:
-        print(f"Error saving accounts: {e}")
-        
+    with open('accounts.json', 'w') as f:
+        json.dump(accounts, f, indent=4)
+
+
 # Utility functions
 def load_file(file_path, default):
     if os.path.exists(file_path):
@@ -95,87 +90,22 @@ def home():
 @app.route('/stock', methods=['GET', 'POST'])
 def manage_stock():
     stock = load_file(STOCK_FILE, {})
-    accounts = load_accounts()
-
+    accounts = load_accounts()  # Load accounts from accounts.json
     if request.method == 'POST':
         data = request.json
         category = data.get('category')
         service = data.get('service')
         accounts_list = data.get('accounts', [])
-
-        if not category or not service or not accounts_list:
-            return jsonify({'success': False, 'message': 'Missing required fields: category, service, or accounts'}), 400
-
         if category not in stock:
             stock[category] = {}
         if service not in stock[category]:
             stock[category][service] = []
-
         stock[category][service].extend(accounts_list)
         save_file(STOCK_FILE, stock)
-        save_accounts(accounts)  # Ensure accounts are saved after any changes
         return jsonify({'success': True, 'message': f'Added accounts to {service} in {category}.'})
-    
-@app.route('/api/get_account', methods=['POST'])
-def get_account():
-    """
-    API endpoint for generating an account for a given service.
-    """
-    data = request.json
-    service = data.get('service')
+    return render_template('stock.html', stock=stock, accounts=accounts)
 
-    if not service:
-        return jsonify({'success': False, 'message': 'Service not specified'}), 400
-
-    # Load accounts
-    accounts = load_accounts()
-    service_lower = service.lower()
-
-    # Check stock for the requested service
-    if service_lower in accounts and accounts[service_lower]:
-    account = accounts[service_lower].pop(0)  # Remove the first account
-    save_accounts(accounts)  # Save updated stock
-
-    username, password = account.split(':', 1)
-    
-    # Ensure account is removed from manage_service and stock
-    manage_service(service_lower, remove_account=account)
-
-    return jsonify({
-        'success': True,
-        'username': username,
-        'password': password,
-        'remaining_stock': len(accounts[service_lower])  # Show updated stock count
-    })
-else:
-    return jsonify({'success': False, 'message': f'No accounts available for {service}'}), 404
-    
-@app.route('/manage_service/<service_name>', methods=['GET', 'POST'])
-def manage_service(service_name, remove_account=None):
-    accounts = load_accounts()
-
-    if service_name not in accounts:
-        flash(f"Service '{service_name}' does not exist.", "danger")
-        return redirect(url_for('services'))
-
-    if request.method == 'POST':
-        # Edit accounts for the service
-        new_accounts = request.form['accounts']
-        accounts[service_name] = [account.strip() for account in new_accounts.splitlines() if account.strip()]
-        save_accounts(accounts)
-        flash(f"Accounts for service '{service_name}' updated successfully!", "success")
-
-    # If an account is passed for removal, remove it from the stock
-    if remove_account:
-        if remove_account in accounts[service_name]:
-            accounts[service_name].remove(remove_account)
-            save_accounts(accounts)
-            flash(f"Account removed from service '{service_name}'", "success")
-        else:
-            flash(f"Account not found in service '{service_name}'", "danger")
-
-    return render_template('manage_service.html', service_name=service_name, accounts=accounts)
-    
+@app.route('/giveaways', methods=['GET', 'POST'])
 def giveaways():
     giveaways = load_file(GIVEAWAYS_FILE, [])
     if request.method == 'POST':
@@ -189,6 +119,21 @@ def giveaways():
         return jsonify({'success': True, 'message': 'Giveaway added successfully!'})
     is_empty = len(giveaways) == 0
     return render_template('giveaways.html', giveaways=giveaways, is_empty=is_empty)
+
+@app.route('/fetch_account/<service_name>', methods=['GET'])
+@login_required
+def fetch_account(service_name):
+    accounts = load_accounts()
+    # Check if the service exists
+    if service_name in accounts and len(accounts[service_name]) > 0:
+        # Fetch one account from the service
+        account = accounts[service_name].pop(0)  # Remove the first account
+        save_accounts(accounts)  # Save the updated list back to accounts.json
+        
+        # Return the account in the 'user:pass' format
+        return jsonify({"account": account}), 200
+    else:
+        return jsonify({"error": "No accounts available for this service."}), 404
     
 @app.route('/stats/json', methods=['GET'])
 def get_stats_json():
@@ -307,6 +252,22 @@ def services():
 
     return render_template('services.html', accounts=accounts)
 
+@app.route('/manage_service/<service_name>', methods=['GET', 'POST'])
+def manage_service(service_name):
+    accounts = load_accounts()
+    if service_name not in accounts:
+        flash(f"Service '{service_name}' does not exist.", "danger")
+        return redirect(url_for('services'))
+
+    if request.method == 'POST':
+        # Edit accounts for the service
+        new_accounts = request.form['accounts']
+        accounts[service_name] = [account.strip() for account in new_accounts.splitlines() if account.strip()]
+        save_accounts(accounts)
+        flash(f"Accounts for service '{service_name}' updated successfully!", "success")
+
+    return render_template('manage_service.html', service_name=service_name, accounts=accounts)
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -314,7 +275,7 @@ def dashboard():
 
 @app.route('/services/summary', methods=['GET'])
 def service_summary():
-    accounts = load_accounts()  # Load accounts from `accounts.json`
+    accounts = load_accounts()  # Load accounts from accounts.json
     summary = {service: len(accounts_list) for service, accounts_list in accounts.items()}
     return jsonify(summary)
     

@@ -290,22 +290,6 @@ def services():
 
     return render_template('services.html', accounts=accounts)
 
-@app.route('/manage_service/<service_name>', methods=['GET', 'POST'])
-def manage_service(service_name):
-    accounts = load_accounts()
-    if service_name not in accounts:
-        flash(f"Service '{service_name}' does not exist.", "danger")
-        return redirect(url_for('services'))
-
-    if request.method == 'POST':
-        # Edit accounts for the service
-        new_accounts = request.form['accounts']
-        accounts[service_name] = [account.strip() for account in new_accounts.splitlines() if account.strip()]
-        save_accounts(accounts)
-        flash(f"Accounts for service '{service_name}' updated successfully!", "success")
-
-    return render_template('manage_service.html', service_name=service_name, accounts=accounts)
-
 @app.route('/dashboard')
 @login_required
 def dashboard():

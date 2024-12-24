@@ -67,13 +67,6 @@ if not os.path.exists(USER_FILE):
         json.dump({"users": []}, file)
 
 # Authentication Decorator
-def login_required(f):
-    def wrapper(*args, **kwargs):
-        if not session.get('logged_in'):
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    wrapper.__name__ = f.__name__
-    return wrapper
 
 # Routes
 @app.route('/')

@@ -25,6 +25,12 @@ DISCORD_CLIENT_SECRET = 'q5zW0BvYYtN2ZYYY8KpPD4fAgFHn4qEE'
 DISCORD_API_URL = 'https://discord.com/api/v10'
 DISCORD_REDIRECT_URI = 'http://localhost:5000/callback'
 client = WebApplicationClient(DISCORD_CLIENT_ID)
+
+@app.before_request
+def require_login():
+    allowed_routes = ['login', 'signup', 'discord_callback', 'static', 'service_summary', 'update_stats', 'fetch_account']
+    if 'user' not in session and request.endpoint not in allowed_routes:
+        return redirect(url_for('login'))
     
 def load_accounts():
     try:
@@ -67,6 +73,13 @@ if not os.path.exists(USER_FILE):
         json.dump({"users": []}, file)
 
 # Authentication Decorator
+def login_required(f):
+    def wrapper(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    wrapper.__name__ = f.__name__
+    return wrapper
 
 # Routes
 @app.route('/')
@@ -138,6 +151,48 @@ def stats_page():
         return render_template('stats.html', stats=stats)
     
     return "Error: Stats file not found", 500
+    
+@app.route('/login', methods=['GET', 'POST'])
+def login(): 
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = find_user(username)
+
+        if user and check_password_hash(user['password'], password):
+            session['logged_in'] = True
+            session['user'] = username
+            return redirect(url_for('home'))
+        else:
+            return render_template('login.html', error="Invalid username or password.")
+
+    if session.get('logged_in'):
+        return redirect(url_for('home'))
+
+    return render_template('login.html')
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+
+        if password != confirm_password:
+            return render_template('signup.html', error="Passwords do not match.")
+
+        users = load_users()
+        if find_user(username):
+            return render_template('signup.html', error="Username already exists.")
+
+        hashed_password = generate_password_hash(password)
+        users['users'].append({"username": username, "password": hashed_password})
+        save_users(users)
+
+        flash("Signup successful! Please log in.", "success")
+        return redirect(url_for('login'))
+
+    return render_template('signup.html')
 
 @app.route('/logout')
 def logout():

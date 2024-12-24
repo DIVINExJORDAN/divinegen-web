@@ -145,48 +145,6 @@ def stats_page():
         return render_template('stats.html', stats=stats)
     
     return "Error: Stats file not found", 500
-    
-@app.route('/login', methods=['GET', 'POST'])
-def login(): 
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        user = find_user(username)
-
-        if user and check_password_hash(user['password'], password):
-            session['logged_in'] = True
-            session['user'] = username
-            return redirect(url_for('home'))
-        else:
-            return render_template('login.html', error="Invalid username or password.")
-
-    if session.get('logged_in'):
-        return redirect(url_for('home'))
-
-    return render_template('login.html')
-
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        confirm_password = request.form['confirm_password']
-
-        if password != confirm_password:
-            return render_template('signup.html', error="Passwords do not match.")
-
-        users = load_users()
-        if find_user(username):
-            return render_template('signup.html', error="Username already exists.")
-
-        hashed_password = generate_password_hash(password)
-        users['users'].append({"username": username, "password": hashed_password})
-        save_users(users)
-
-        flash("Signup successful! Please log in.", "success")
-        return redirect(url_for('login'))
-
-    return render_template('signup.html')
 
 @app.route('/logout')
 def logout():
